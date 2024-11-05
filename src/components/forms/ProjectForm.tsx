@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { loadData, saveData, type Project } from '@/data/store';
+import { loadData, saveData, type Project } from '../../data/store';
 
 interface ProjectFormProps {
   onSubmit: (project: Project) => void;
@@ -48,13 +48,11 @@ export default function ProjectForm({ onSubmit, onCancel, initialData }: Project
     };
 
     if (initialData) {
-      
       const index = appData.projects.findIndex((p: Project) => p.id === initialData.id);
       if (index !== -1) {
         appData.projects[index] = newProject;
       }
     } else {
-      
       appData.projects.push(newProject);
     }
 

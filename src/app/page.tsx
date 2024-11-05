@@ -15,13 +15,16 @@ export default function Home() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
   const [hasExistingData, setHasExistingData] = useState(false);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    const data = loadData();
-    const storedData = typeof window !== 'undefined' ? localStorage.getItem('zeipilote-data') : null;
-    setHasExistingData(!!data.businessInfo.profession && !!storedData);
+    try {
+      const data = loadData();
+      const storedData = localStorage.getItem('zeipilote-data');
+      setHasExistingData(!!data.businessInfo?.profession && !!storedData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setHasExistingData(false);
+    }
   }, []);
 
   const onSubmit = (data: FormData) => {
@@ -33,10 +36,6 @@ export default function Home() {
     saveData(appData);
     router.push('/invoices');
   };
-
-  if (!isClient) {
-    return null;
-  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
@@ -54,7 +53,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">
-            ZeiPilote,Ton co-pilote pour gerer ta boite. 
+            ZeiPilote, Ton co-pilote pour gerer ta boite. 
           </h1>
           
           <div className="mb-8 text-center">
@@ -65,7 +64,7 @@ export default function Home() {
             </p>
           </div>
 
-          {!hasExistingData && (
+          {!hasExistingData ? (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
                 <label 
@@ -104,9 +103,7 @@ export default function Home() {
                 {isLoading ? 'Chargement...' : 'Accéder au Tableau de Bord'}
               </button>
             </form>
-          )}
-
-          {hasExistingData && (
+          ) : (
             <div className="text-center">
               <button
                 onClick={() => router.push('/dashboard')}

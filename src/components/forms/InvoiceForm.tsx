@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { loadData, saveData, type Invoice, formatCurrency } from '@/data/store';
+import { loadData, saveData, type Invoice, formatCurrency } from '../../data/store';
 
 interface InvoiceFormProps {
   onSubmit: (invoice: Invoice) => void;
@@ -65,13 +65,11 @@ export default function InvoiceForm({ onSubmit, onCancel, initialData }: Invoice
     };
 
     if (initialData) {
-      
       const index = appData.invoices.findIndex(i => i.id === initialData.id);
       if (index !== -1) {
         appData.invoices[index] = newInvoice;
       }
     } else {
-      
       appData.invoices.push(newInvoice);
     }
 

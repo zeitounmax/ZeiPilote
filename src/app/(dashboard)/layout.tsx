@@ -19,15 +19,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [data, setData] = useState<AppData | null>(null);
+  const [data, setData] = useState<AppData>(() => loadData());
   const [isEditingProfession, setIsEditingProfession] = useState(false);
-  const [profession, setProfession] = useState('');
-
-  useEffect(() => {
-    const appData = loadData();
-    setData(appData);
-    setProfession(appData.businessInfo.profession);
-  }, []);
+  const [profession, setProfession] = useState(() => {
+    const initialData = loadData();
+    return initialData.businessInfo.profession;
+  });
 
   const handleProfessionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +92,7 @@ export default function DashboardLayout({
                     type="button"
                     onClick={() => {
                       setIsEditingProfession(false);
-                      setProfession(data?.businessInfo.profession || '');
+                      setProfession(data.businessInfo.profession);
                     }}
                     className="text-red-500 hover:text-red-400 p-2 rounded-full hover:bg-[#232937]"
                   >
@@ -106,7 +103,7 @@ export default function DashboardLayout({
                 </form>
               ) : (
                 <div className="flex items-center space-x-2 bg-[#232937] rounded-lg px-4 py-2">
-                  <span className="text-sm text-gray-300">{data?.businessInfo.profession}</span>
+                  <span className="text-sm text-gray-300">{data.businessInfo.profession}</span>
                   <button
                     onClick={() => setIsEditingProfession(true)}
                     className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-[#2a3241]"

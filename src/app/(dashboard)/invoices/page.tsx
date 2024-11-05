@@ -2,19 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { loadData, formatCurrency, getRevenueTotal, deleteInvoice, exportInvoiceToPdf, type Invoice } from '@/data/store';
-import Modal from '@/components/ui/Modal';
-import InvoiceForm from '@/components/forms/InvoiceForm';
+import { loadData, formatCurrency, getRevenueTotal, deleteInvoice, exportInvoiceToPdf, type Invoice } from '../../../data/store';
+import Modal from '../../../components/ui/Modal';
+import InvoiceForm from '../../../components/forms/InvoiceForm';
 
 export default function InvoicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>(undefined);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
-  const [currentDate, setCurrentDate] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
-  const data = loadData();
-  const revenue = getRevenueTotal(data.invoices);
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return now.toLocaleDateString('fr-FR');
+  });
+  const [currentTime, setCurrentTime] = useState(() => {
+    const now = new Date();
+    return now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  });
+  const [data, setData] = useState(() => loadData());
+  const [revenue, setRevenue] = useState(() => getRevenueTotal(loadData().invoices));
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -23,11 +29,15 @@ export default function InvoicesPage() {
       setCurrentTime(now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     };
 
-    updateDateTime();
     const interval = setInterval(updateDateTime, 60000); 
-
     return () => clearInterval(interval);
   }, []);
+
+  const refreshData = () => {
+    const newData = loadData();
+    setData(newData);
+    setRevenue(getRevenueTotal(newData.invoices));
+  };
 
   const handleAddInvoice = () => {
     setSelectedInvoice(undefined);
@@ -50,7 +60,7 @@ export default function InvoicesPage() {
       deleteInvoice(invoiceToDelete.id);
       setShowDeleteConfirm(false);
       setInvoiceToDelete(null);
-      window.location.reload();
+      refreshData();
     }
   };
 
@@ -61,7 +71,7 @@ export default function InvoicesPage() {
 
   const handleSubmitInvoice = (invoice: Invoice) => {
     setIsModalOpen(false);
-    window.location.reload();
+    refreshData();
   };
 
   return (

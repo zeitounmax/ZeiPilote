@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { loadData, saveData, type Client } from '@/data/store';
+import { loadData, saveData, type Client } from '../../data/store';
 
 interface ClientFormProps {
   onSubmit: (client: Client) => void;
