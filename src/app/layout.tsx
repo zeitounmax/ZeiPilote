@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "ZeimaPilote - Tableau de Bord Entreprise",
-  description: "Pilotez votre micro-entreprise efficacement avec ZeiPilote, votre tableau de bord professionnel personnalisé.",
+  description: "Pilote ton micro-entreprise efficacement avec ZeiPilote, ton tableau de bord professionnel personnalisé.",
 };
 
 export default function RootLayout({
