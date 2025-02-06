@@ -1,66 +1,30 @@
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  createdAt: string;
-}
+import type { AppData, BusinessInfo, Settings, Invoice, Client, Project } from '../types';
 
-export interface Invoice {
-  id: string;
-  clientId: string;
-  amount: number;
-  status: 'draft' | 'sent' | 'paid';
-  date: string;
-  dueDate: string;
-  items: {
-    description: string;
-    quantity: number;
-    price: number;
-  }[];
-}
-
-export interface Project {
-  id: string;
-  clientId: string;
-  name: string;
-  description: string;
-  status: 'active' | 'completed' | 'on-hold';
-  startDate: string;
-  endDate?: string;
-}
-
-export interface AppData {
-  clients: Client[];
-  invoices: Invoice[];
-  projects: Project[];
+const defaultData: AppData = {
   businessInfo: {
-    profession: string;
-    lastUpdated: string;
-  };
-}
-
-export const initialData: AppData = {
-  clients: [],
-  invoices: [],
-  projects: [],
-  businessInfo: {
-    profession: 'Développeur Web',
-    lastUpdated: new Date().toISOString(),
+    name: '',
+    profession: '',
+    lastUpdated: new Date().toISOString()
   },
+  invoices: [],
+  clients: [],
+  projects: [],
+  settings: {
+    currency: 'EUR',
+    currencyFormat: 'fr-FR'
+  }
 };
 
 export function loadData(): AppData {
-  if (typeof window === 'undefined') return initialData;
+  if (typeof window === 'undefined') return defaultData;
   
-  const stored = localStorage.getItem('zeipilote-data');
-  if (!stored) return initialData;
+  const storedData = localStorage.getItem('zeipilote-data');
+  if (!storedData) return defaultData;
   
   try {
-    return JSON.parse(stored);
+    return JSON.parse(storedData);
   } catch {
-    return initialData;
+    return defaultData;
   }
 }
 
@@ -74,6 +38,27 @@ export function updateProfession(profession: string): void {
   data.businessInfo.profession = profession;
   data.businessInfo.lastUpdated = new Date().toISOString();
   saveData(data);
+}
+
+export function updateProfile(profile: Partial<BusinessInfo>) {
+  const data = loadData();
+  data.businessInfo = {
+    ...data.businessInfo,
+    ...profile,
+    lastUpdated: new Date().toISOString()
+  };
+  localStorage.setItem('zeipilote-data', JSON.stringify(data));
+}
+
+export function updateSettings(settings: Partial<Settings>) {
+  const data = loadData();
+  data.settings = {
+    currency: 'EUR',
+    currencyFormat: 'fr-FR',
+    ...data.settings,
+    ...settings
+  };
+  localStorage.setItem('zeipilote-data', JSON.stringify(data));
 }
 
 export function exportDataToJson(): void {
@@ -180,7 +165,6 @@ export function importData(jsonString: string): boolean {
 export function deleteClient(clientId: string): void {
   const data = loadData();
   data.clients = data.clients.filter(client => client.id !== clientId);
-  // Also delete related projects and invoices
   data.projects = data.projects.filter(project => project.clientId !== clientId);
   data.invoices = data.invoices.filter(invoice => invoice.clientId !== clientId);
   saveData(data);
@@ -199,9 +183,7 @@ export function deleteInvoice(invoiceId: string): void {
 }
 
 export function getRevenueTotal(invoices: Invoice[]): number {
-  return invoices.reduce((total, invoice) => {
-    return invoice.status === 'paid' ? total + invoice.amount : total;
-  }, 0);
+  return invoices.reduce((total, invoice) => total + invoice.amount, 0);
 }
 
 export function getClientById(clients: Client[], id: string): Client | undefined {
@@ -217,8 +199,11 @@ export function getInvoicesByClientId(invoices: Invoice[], clientId: string): In
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('fr-FR', {
+  const data = loadData();
+  return new Intl.NumberFormat(data.settings?.currencyFormat || 'fr-FR', {
     style: 'currency',
-    currency: 'EUR',
+    currency: data.settings?.currency || 'EUR'
   }).format(amount);
 }
+
+export * from '../types';

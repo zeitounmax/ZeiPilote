@@ -2,13 +2,39 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { loadData, AppData, saveData, exportDataToJson, importData } from '@/data/store';
+import { loadData, saveData, exportDataToJson, importData } from '@/data/store';
+import type { AppData } from '@/data/store';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { handleExportPDF } from '@/components/ui/PDFExport';
+import { Card } from '../../../components/ui/Card';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function DashboardPage() {
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
-  const [data, setData] = useState<AppData | null>(null);
+  const [data, setData] = useState(() => loadData());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [revenueData, setRevenueData] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -24,7 +50,32 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    setData(loadData());
+    const data = loadData();
+    const invoices = data.invoices || [];
+    
+    const monthlyData = invoices.reduce((acc: any, invoice: any) => {
+      const date = new Date(invoice.date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = 0;
+      }
+      acc[monthYear] += invoice.total;
+      return acc;
+    }, {});
+
+    setRevenueData({
+      labels: Object.keys(monthlyData),
+      datasets: [
+        {
+          label: 'Chiffre d\'affaires mensuel',
+          data: Object.values(monthlyData),
+          fill: false,
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1
+        }
+      ]
+    });
   }, []);
 
   const handleExport = () => {
@@ -38,16 +89,17 @@ export default function DashboardPage() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      if (importData(content)) {
+      try {
+        const jsonData = JSON.parse(content);
+        localStorage.setItem('zeipilote-data', JSON.stringify(jsonData));
         setData(loadData());
         alert('Données importées avec succès');
-      } else {
+      } catch {
         alert('Erreur lors de l\'importation des données');
       }
     };
     reader.readAsText(file);
   };
-
 
   const clientCount = data?.clients.length ?? null;
   const invoiceCount = data?.invoices.length ?? null;
@@ -58,7 +110,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-white">Tableau de Bord</h1>
+        <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
         <div className="flex items-center space-x-4 text-gray-400">
           <span>{currentDate}</span>
           <span>{currentTime}</span>
@@ -143,40 +195,106 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-white">Gestion des Données</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={handleExport}
-            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 rounded-lg text-center transition-colors"
-          >
-            Exporter les Données
-          </button>
-          <div className="relative">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImport}
-              accept=".json"
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg text-center transition-colors"
-            >
-              Importer des Données
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div>
         <h2 className="text-xl font-semibold text-white mb-4">Activité Récente</h2>
         <div className="bg-[#1a1f2e] rounded-lg p-6">
           <p className="text-gray-400 text-center">Aucune activité récente à afficher</p>
         </div>
       </div>
+
+      <section className="bg-[#1a1f2e] rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">Analyse des revenus</h2>
+        <div className="h-[400px]">
+          {revenueData && (
+            <Line
+              data={revenueData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: 'white'
+                    },
+                    grid: {
+                      color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                  },
+                  x: {
+                    ticks: {
+                      color: 'white'
+                    },
+                    grid: {
+                      color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    labels: {
+                      color: 'white'
+                    }
+                  }
+                }
+              }}
+            />
+          )}
+        </div>
+      </section>
+
+      <Card>
+        <h2 className="text-xl font-semibold mb-4">Gestion des données</h2>
+        <div className="bg-gray-900 rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-gray-800 rounded-lg flex flex-col h-[200px]">
+              <div className="flex-grow">
+                <h3 className="text-lg font-medium mb-3">Importer des données</h3>
+                <p className="text-gray-400 mb-4">
+                  Importez vos données depuis une sauvegarde JSON
+                </p>
+              </div>
+              <label className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md cursor-pointer transition-colors">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Importer
+                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+              </label>
+            </div>
+
+            <div className="p-4 bg-gray-800 rounded-lg flex flex-col h-[200px]">
+              <div className="flex-grow">
+                <h3 className="text-lg font-medium mb-3">Exporter en JSON</h3>
+                <p className="text-gray-400 mb-4">
+                  Sauvegardez vos données dans un fichier JSON
+                </p>
+              </div>
+              <button onClick={exportDataToJson} className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Exporter JSON
+              </button>
+            </div>
+
+            <div className="p-4 bg-gray-800 rounded-lg flex flex-col h-[200px]">
+              <div className="flex-grow">
+                <h3 className="text-lg font-medium mb-3">Exporter en PDF</h3>
+                <p className="text-gray-400 mb-4">
+                  Générez un rapport mensuel au format PDF
+                </p>
+              </div>
+              <button onClick={handleExportPDF} className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Exporter PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

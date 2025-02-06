@@ -13,9 +13,13 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.5",
-    "next": "15.0.2",
-    "react": "19.0.0-rc-02c0e824-20241028",
-    "react-dom": "19.0.0-rc-02c0e824-20241028",
+    "chart.js": "^4.4.7",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
     "react-hook-form": "^7.53.1"
   },
   "devDependencies": {
@@ -25,9 +29,9 @@
     "eslint": "^8",
     "eslint-config-next": "15.0.2",
     "postcss": "^8",
+    "rimraf": "^5.0.5",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5",
-    "rimraf": "^5.0.5"
+    "typescript": "^5"
   },
   "engines": {
     "node": ">=18.17.0"
